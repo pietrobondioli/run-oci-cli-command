@@ -44,14 +44,25 @@ export async function runOciCliCommand(): Promise<void> {
   }
 
   const cliBin = await io.which('oci', true)
-  const cliArgs = core
-    .getInput('command', { required: true })
-    .replace(/^(oci\s)/, '')
-    .trim()
+  function sanitizeMultilineCommand(command: string): string {
+    return command
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .join(' ')
+  }
+
+  const cliArgs = sanitizeMultilineCommand(
+    core
+      .getMultilineInput('command', { required: true })
+      .join('\n')
+      .replace(/^(oci\s)/, '')
+      .trim()
+  )
+
   const jmesPath = core.getInput('query') ? `--query "${core.getInput('query').trim()}"` : ''
   core.info('Executing Oracle Cloud Infrastructure CLI command')
   const silent = core.getBooleanInput('silent', { required: false })
-
   const cliCommand = `${cliBin} ${jmesPath} ${cliArgs}`
   if (silent) core.setSecret(cliCommand)
 
